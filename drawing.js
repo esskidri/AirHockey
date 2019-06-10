@@ -74,6 +74,10 @@ var textureInfluence = 1.0;
 var ambientLightInfluence = 0.0;
 var ambientLightColor = [1.0, 1.0, 1.0, 1.0];
 
+var increments = []
+var pointsP1 = 0;
+var pointsP2 = 0;
+
 function main() {
 
 
@@ -110,10 +114,17 @@ function main() {
 
 		//Setting up the interaction using keys
 		initInteraction();
-
+		
+		//Start the game
+		
+		increments[0] = -Math.cos(Math.PI/12); //dx
+		increments[1] = -Math.sin(Math.PI/12); //dy
+		moveBall();
 
 		//Rendering cycle
 		drawScene();
+
+	
 
 
 	} else {
@@ -390,6 +401,138 @@ function loadModel(modelName) {
 }
 
 
+function moveBall() {
+
+	document.getElementById("p1").innerHTML = pointsP1;			
+	document.getElementById("p2").innerHTML = pointsP2;			
+ 
+	var p1x = objectWorldMatrix[0][3];
+	var p1y = objectWorldMatrix[0][7];
+	var p2x = objectWorldMatrix[1][3];
+	var p2y = objectWorldMatrix[1][7];
+	var x = objectWorldMatrix[2][3];
+	var y = objectWorldMatrix[2][7];
+	var distanceFromP1 = Math.sqrt(Math.pow(x -p1x -0.7, 2) + Math.pow(y-p1y, 2));
+	var distanceFromP2 = Math.sqrt(Math.pow(x -p2x +0.75, 2) + Math.pow(y-p2y, 2));
+	var dx = increments[0];
+	var dy = increments[1];
+
+	//Difference in model frames: 0.7 x
+
+	var angle = Math.abs(Math.atan(dy/dx));
+	var bounce_angle = Math.PI/2 - angle;
+	
+	if(distanceFromP1 < 0.1){
+		dx = -0.01*Math.cos(angle);
+		if(dy<0){
+			dy = 0.01*Math.sin(angle);
+		}
+		else{
+			dy = -0.01*Math.sin(angle);
+		}
+	
+	}
+	if(distanceFromP2 < 0.1){
+		dx = 0.01*Math.cos(angle);
+		if(dy<0){
+			dy = 0.01*Math.sin(angle);
+		}
+		else{
+			dy = -0.01*Math.sin(angle);
+		
+			}
+	}
+
+	else if(y < -0.4){
+		dy = 0.01*Math.sin(bounce_angle)
+		if(dx<0){
+			dx = -0.01*Math.cos(bounce_angle);
+		}
+		else{
+			dx = 0.01*Math.cos(bounce_angle);
+		}
+	} 
+
+	else if(y>0.4){
+		dy = -0.01*Math.sin(bounce_angle);
+		if(dx<0){
+			dx = -0.01*Math.cos(bounce_angle);
+		}
+		else{
+			dx = 0.01*Math.cos(bounce_angle);
+		}
+	}
+
+	else if(x>=0.82){
+		if(y>-0.2 & y < 0.2){
+			console.log("P2 won");
+			//RESTART
+			pointsP2 += 1;
+			document.getElementById("p2").innerHTML = pointsP2;			
+
+			dx = -dx;
+			dy = -dy;
+	
+		}
+		else{
+			dx = -0.01*Math.sin(bounce_angle)
+			if(dy<0){
+				dy = -0.01*Math.cos(bounce_angle);
+			}
+			else{
+				dy = 0.01*Math.cos(bounce_angle);
+			}
+		}
+	}
+	else if(x<=-0.84){
+		if (y>-0.2 & y < 0.2){
+			
+			console.log("P1 won");
+			//RESTART
+			pointsP1 += 1;
+			document.getElementById("p1").innerHTML = pointsP1;			
+			dx = -dx;
+			dy = -dy;
+		}
+		else{
+			dx = 0.01*Math.sin(bounce_angle)
+			if(dy<0){
+				dy = -0.01*Math.cos(bounce_angle);
+			}
+			else{
+				dy = 0.01*Math.cos(bounce_angle);
+			}
+
+		}
+	} 
+	
+	else {
+		if(dx>0){
+			dx = 0.01*Math.cos(angle);
+		}
+		else{
+			dx = -0.01*Math.cos(angle);
+		}
+		if(dy > 0){
+			dy = 0.01*Math.sin(angle);
+		}
+		else{
+			dy = -0.01*Math.sin(angle);
+		}
+	}
+ 
+
+	objectWorldMatrix[2] = utils.multiplyMatrices(
+		objectWorldMatrix[2],
+		utils.MakeTranslateMatrix(-dx, 0, dy));
+
+	increments[0] = dx;
+	increments[1] = dy;
+	
+
+	window.setTimeout(moveBall, 1000 / 60);
+} 
+
 function initInteraction() {
 	var keyFunction = function (e) {
 
@@ -397,28 +540,77 @@ function initInteraction() {
 		if (e.keyCode == 32) {	// spacebar
 		cx=cx+0.01;
 		}
-
+		
+		//RIGHT PLAYER
 		if (e.keyCode == 37) {	// Left arrow
-			objectWorldMatrix[0] = utils.multiplyMatrices(
+			
+			if (objectWorldMatrix[0][3]> -0.63){
+				objectWorldMatrix[0] = utils.multiplyMatrices(
 				objectWorldMatrix[0],
 				utils.MakeTranslateMatrix(0.01, 0, 0));
+			}
 		}
 		if (e.keyCode == 39) {	// Right arrow
-			objectWorldMatrix[0] = utils.multiplyMatrices(
+			console.log(objectWorldMatrix[0]);
+			if (objectWorldMatrix[0][3]< 0.07){
+				objectWorldMatrix[0] = utils.multiplyMatrices(
 				objectWorldMatrix[0],
 				utils.MakeTranslateMatrix(-0.01, 0, 0));
+			}
 		}
 		if (e.keyCode == 38) {	// Up arrow
+			if (objectWorldMatrix[0][7] < 0.4){
 			objectWorldMatrix[0] = utils.multiplyMatrices(
 				objectWorldMatrix[0],
 				utils.MakeTranslateMatrix(0, 0, 0.01));
+			}
 		}
 		if (e.keyCode == 40) {	// Down arrow
-			objectWorldMatrix[0] = utils.multiplyMatrices(
+
+			if (objectWorldMatrix[0][7] > -0.33){
+				objectWorldMatrix[0] = utils.multiplyMatrices(
 				objectWorldMatrix[0],
 				utils.MakeTranslateMatrix(0, 0, -0.01));
+			}
 		}
 		
+		//LEFT PLAYER 
+		if (e.keyCode == 72) {	// h
+			if (objectWorldMatrix[1][3] > -0.04){
+			objectWorldMatrix[1] = utils.multiplyMatrices(
+				objectWorldMatrix[1],
+				utils.MakeTranslateMatrix(0.01, 0, 0));
+			}
+		}
+		if (e.keyCode == 75) {	// k
+			console.log(objectWorldMatrix[1]);
+
+
+			if (objectWorldMatrix[1][3] < 0.67){
+			objectWorldMatrix[1] = utils.multiplyMatrices(
+				objectWorldMatrix[1],
+				utils.MakeTranslateMatrix(-0.01, 0, 0));
+			}
+		}
+		if (e.keyCode == 85) {	// u
+			if (objectWorldMatrix[1][7] < 0.4){
+
+			objectWorldMatrix[1] = utils.multiplyMatrices(
+				objectWorldMatrix[1],
+				utils.MakeTranslateMatrix(0, 0, 0.01));
+			}
+		}
+		if (e.keyCode == 74) {	// j
+			if (objectWorldMatrix[1][7] > -0.33){
+			objectWorldMatrix[1] = utils.multiplyMatrices(
+				objectWorldMatrix[1],
+				utils.MakeTranslateMatrix(0, 0, -0.01));
+			}
+		}
+
+
+
+
 		if (e.keyCode == 107) {	// Add
 			if(moveLight == 0)  cy+=delta;
 			else lightPosition[1] +=delta;

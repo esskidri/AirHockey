@@ -2,10 +2,26 @@
 <html lang="en-US">
 	<head>
 	<meta charset='utf-8'>
-	<title>04 Texture and Model loading</title>
+	<title>AIR HOCKEY</title>
 	<script type="text/javascript" src="utils.js"></script>
 	<script type="text/javascript" src="drawing.js"></script>
 	</head>
+
+	<body style="background-color: grey;" onLoad="main();">
+		<table style="float: right; margin-right:50px">
+			<caption>POINTS</caption>
+			<tr>
+				<th scope="col">Player 1</th>
+				<th scope="col">Player 2</th>
+			</tr>
+			<tr>
+				<th scope="col"><p id="p1"></p></th>
+				<th scope="col"><p id="p2"></p></th>
+				
+			</tr>		
+		</table>
+	</body>
+
 	<body style="background-color: grey;" onLoad="main();">
 		<table>
 		<tr>
@@ -16,6 +32,7 @@
 						
 			</td>
 			<td style="background-color: rgb(150, 132, 132); font-family: courier; padding: 5px;">
+			
 			<p><h2> Options </h2></p>
 			<p><b> Light Source </b></p>
 			<form>
@@ -49,4 +66,6 @@
 		<tr>
 		</table>
 	</body>
+
+	
 </html>
