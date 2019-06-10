@@ -73,6 +73,7 @@ var currentShader = 0;                //Defines the current shader in use.
 var textureInfluence = 1.0;
 var ambientLightInfluence = 0.0;
 var ambientLightColor = [1.0, 1.0, 1.0, 1.0];
+var cameraVal = 0;
 
 var increments = []
 var pointsP1 = 0;
@@ -133,7 +134,34 @@ function main() {
 
 }
 
+function updateCamera(val){
+
+
+	if (val == 1) {  
+		cx = 0.8;
+		cy = 0;
+		cz = 2;
+		angle = -20;
+		elevation = -90;
+		}
+	else if (val == -1) {  
+		cx = -0.8;
+		cy = 0;
+		cz = 2;
+		angle = 20;
+		elevation = 90;
+	}
+	else if(val==0){
+		cx = 0.0;
+		cy = 0.0;
+		cz = 2.0;
+		angle = 0.0;
+		elevation = 0;
+	}
+}
+	
 //Called when the slider for texture influence is changed
+
 function updateTextureInfluence(val) {
 	textureInfluence = val;
 }
@@ -412,6 +440,7 @@ function moveBall() {
 	var p2y = objectWorldMatrix[1][7];
 	var x = objectWorldMatrix[2][3];
 	var y = objectWorldMatrix[2][7];
+
 	var distanceFromP1 = Math.sqrt(Math.pow(x -p1x -0.7, 2) + Math.pow(y-p1y, 2));
 	var distanceFromP2 = Math.sqrt(Math.pow(x -p2x +0.75, 2) + Math.pow(y-p2y, 2));
 	var dx = increments[0];
@@ -420,20 +449,30 @@ function moveBall() {
 	//Difference in model frames: 0.7 x
 
 	var angle = Math.abs(Math.atan(dy/dx));
-	var bounce_angle = Math.PI/2 - angle;
+	var bounce_angle =  angle;
 	
 	if(distanceFromP1 < 0.1){
-		dx = -0.01*Math.cos(angle);
+		if(dx<0){
+			dx = 0.01*Math.cos(bounce_angle);
+		}else{ 
+			dx = -0.01*Math.cos(bounce_angle);
+		}
+		
 		if(dy<0){
-			dy = 0.01*Math.sin(angle);
+			dy = 0.01*Math.sin(bounce_angle);
 		}
 		else{
-			dy = -0.01*Math.sin(angle);
+			dy = -0.01*Math.sin(bounce_angle);
 		}
 	
 	}
 	if(distanceFromP2 < 0.1){
-		dx = 0.01*Math.cos(angle);
+		if(dx<0){
+			dx = 0.01*Math.cos(angle);
+		}else{
+			dx = -0.01*Math.cos(angle);
+
+		}
 		if(dy<0){
 			dy = 0.01*Math.sin(angle);
 		}
@@ -463,7 +502,7 @@ function moveBall() {
 		}
 	}
 
-	else if(x>=0.82){
+	else if(x>=0.8){
 		if(y>-0.2 & y < 0.2){
 			console.log("P2 won");
 			//RESTART
@@ -484,7 +523,7 @@ function moveBall() {
 			}
 		}
 	}
-	else if(x<=-0.84){
+	else if(x<=-0.8){
 		if (y>-0.2 & y < 0.2){
 			
 			console.log("P1 won");
@@ -530,7 +569,7 @@ function moveBall() {
 	increments[1] = dy;
 	
 
-	window.setTimeout(moveBall, 1000 / 60);
+	window.setTimeout(moveBall, 10);
 } 
 
 function initInteraction() {
@@ -547,22 +586,21 @@ function initInteraction() {
 			if (objectWorldMatrix[0][3]> -0.63){
 				objectWorldMatrix[0] = utils.multiplyMatrices(
 				objectWorldMatrix[0],
-				utils.MakeTranslateMatrix(0.01, 0, 0));
+				utils.MakeTranslateMatrix(0.02, 0, 0));
 			}
 		}
 		if (e.keyCode == 39) {	// Right arrow
-			console.log(objectWorldMatrix[0]);
 			if (objectWorldMatrix[0][3]< 0.07){
 				objectWorldMatrix[0] = utils.multiplyMatrices(
 				objectWorldMatrix[0],
-				utils.MakeTranslateMatrix(-0.01, 0, 0));
+				utils.MakeTranslateMatrix(-0.02, 0, 0));
 			}
 		}
 		if (e.keyCode == 38) {	// Up arrow
 			if (objectWorldMatrix[0][7] < 0.4){
 			objectWorldMatrix[0] = utils.multiplyMatrices(
 				objectWorldMatrix[0],
-				utils.MakeTranslateMatrix(0, 0, 0.01));
+				utils.MakeTranslateMatrix(0, 0, 0.02));
 			}
 		}
 		if (e.keyCode == 40) {	// Down arrow
@@ -570,7 +608,7 @@ function initInteraction() {
 			if (objectWorldMatrix[0][7] > -0.33){
 				objectWorldMatrix[0] = utils.multiplyMatrices(
 				objectWorldMatrix[0],
-				utils.MakeTranslateMatrix(0, 0, -0.01));
+				utils.MakeTranslateMatrix(0, 0, -0.02));
 			}
 		}
 		
@@ -579,7 +617,7 @@ function initInteraction() {
 			if (objectWorldMatrix[1][3] > -0.04){
 			objectWorldMatrix[1] = utils.multiplyMatrices(
 				objectWorldMatrix[1],
-				utils.MakeTranslateMatrix(0.01, 0, 0));
+				utils.MakeTranslateMatrix(0.02, 0, 0));
 			}
 		}
 		if (e.keyCode == 75) {	// k
@@ -589,7 +627,7 @@ function initInteraction() {
 			if (objectWorldMatrix[1][3] < 0.67){
 			objectWorldMatrix[1] = utils.multiplyMatrices(
 				objectWorldMatrix[1],
-				utils.MakeTranslateMatrix(-0.01, 0, 0));
+				utils.MakeTranslateMatrix(-0.02, 0, 0));
 			}
 		}
 		if (e.keyCode == 85) {	// u
@@ -597,14 +635,14 @@ function initInteraction() {
 
 			objectWorldMatrix[1] = utils.multiplyMatrices(
 				objectWorldMatrix[1],
-				utils.MakeTranslateMatrix(0, 0, 0.01));
+				utils.MakeTranslateMatrix(0, 0, 0.02));
 			}
 		}
 		if (e.keyCode == 74) {	// j
 			if (objectWorldMatrix[1][7] > -0.33){
 			objectWorldMatrix[1] = utils.multiplyMatrices(
 				objectWorldMatrix[1],
-				utils.MakeTranslateMatrix(0, 0, -0.01));
+				utils.MakeTranslateMatrix(0, 0, -0.02));
 			}
 		}
 

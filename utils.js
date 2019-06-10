@@ -466,7 +466,7 @@ var utils={
 		var out = [];
 
 		T =  this.MakeTranslateMatrix(-cx, -cy, -cz);
-		Rx = this.MakeRotateXMatrix(-elev);
+		Rx = this.MakeRotateZMatrix(-elev);
 		Ry = this.MakeRotateYMatrix(-ang);
 
 		tmp = this.multiplyMatrices(Ry, T);
