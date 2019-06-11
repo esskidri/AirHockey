@@ -79,6 +79,11 @@ var increments = []
 var pointsP1 = 0;
 var pointsP2 = 0;
 
+// 0 when central camera, 1 when player1 camera view, -1 when player2 camera view
+var commands = 0;
+
+var audio = [];
+
 function main() {
 
 
@@ -108,6 +113,11 @@ function main() {
 		//The vertex format is (x,y,z,nx,ny,nz,u,v)
 		loadModel("AirHockeyTable.json");
 
+		
+        loadSounds(audio, ["collision"]);
+        loadSounds(audio, ["edge"]);
+        loadSounds(audio, ["goal"]);     
+    
 		//Load shaders' code
 		//compile them
 		//retrieve the handles
@@ -134,22 +144,26 @@ function main() {
 
 }
 
+
 function updateCamera(val){
 
 
 	if (val == 1) {  
-		cx = 0.8;
+		cx = 1.1;
 		cy = 0;
-		cz = 2;
-		angle = -20;
+		cz = 1.6;
+		angle = -30;
 		elevation = -90;
+
+		commands = 1;
 		}
 	else if (val == -1) {  
-		cx = -0.8;
+		cx = -1.1;
 		cy = 0;
-		cz = 2;
-		angle = 20;
+		cz = 1.6;
+		angle = 30;
 		elevation = 90;
+		commands = -1;
 	}
 	else if(val==0){
 		cx = 0.0;
@@ -157,6 +171,7 @@ function updateCamera(val){
 		cz = 2.0;
 		angle = 0.0;
 		elevation = 0;
+		commands = 0;
 	}
 }
 	
@@ -452,6 +467,7 @@ function moveBall() {
 	var bounce_angle =  angle;
 	
 	if(distanceFromP1 < 0.1){
+		playSound(audio[0]);
 		if(dx<0){
 			dx = 0.01*Math.cos(bounce_angle);
 		}else{ 
@@ -467,6 +483,7 @@ function moveBall() {
 	
 	}
 	if(distanceFromP2 < 0.1){
+		playSound(audio[0]);
 		if(dx<0){
 			dx = 0.01*Math.cos(angle);
 		}else{
@@ -483,6 +500,7 @@ function moveBall() {
 	}
 
 	else if(y < -0.4){
+		playSound(audio[1]);
 		dy = 0.01*Math.sin(bounce_angle)
 		if(dx<0){
 			dx = -0.01*Math.cos(bounce_angle);
@@ -493,6 +511,7 @@ function moveBall() {
 	} 
 
 	else if(y>0.4){
+		playSound(audio[1]);
 		dy = -0.01*Math.sin(bounce_angle);
 		if(dx<0){
 			dx = -0.01*Math.cos(bounce_angle);
@@ -503,8 +522,10 @@ function moveBall() {
 	}
 
 	else if(x>=0.8){
+
 		if(y>-0.2 & y < 0.2){
 			console.log("P2 won");
+			playSound(audio[2]);
 			//RESTART
 			pointsP2 += 1;
 			document.getElementById("p2").innerHTML = pointsP2;			
@@ -514,6 +535,7 @@ function moveBall() {
 	
 		}
 		else{
+			playSound(audio[1]);
 			dx = -0.01*Math.sin(bounce_angle)
 			if(dy<0){
 				dy = -0.01*Math.cos(bounce_angle);
@@ -527,6 +549,7 @@ function moveBall() {
 		if (y>-0.2 & y < 0.2){
 			
 			console.log("P1 won");
+			playSound(audio[2]);
 			//RESTART
 			pointsP1 += 1;
 			document.getElementById("p1").innerHTML = pointsP1;			
@@ -534,6 +557,7 @@ function moveBall() {
 			dy = -dy;
 		}
 		else{
+			playSound(audio[1]);
 			dx = 0.01*Math.sin(bounce_angle)
 			if(dy<0){
 				dy = -0.01*Math.cos(bounce_angle);
@@ -580,73 +604,210 @@ function initInteraction() {
 		cx=cx+0.01;
 		}
 		
-		//RIGHT PLAYER
-		if (e.keyCode == 37) {	// Left arrow
+		if (commands==0){
+			//RIGHT PLAYER
+			if (e.keyCode == 37) {	// Left arrow
+				
+				if (objectWorldMatrix[0][3]> -0.63){
+					objectWorldMatrix[0] = utils.multiplyMatrices(
+					objectWorldMatrix[0],
+					utils.MakeTranslateMatrix(0.02, 0, 0));
+				}
+			}
+			if (e.keyCode == 39) {	// Right arrow
+				if (objectWorldMatrix[0][3]< 0.07){
+					objectWorldMatrix[0] = utils.multiplyMatrices(
+					objectWorldMatrix[0],
+					utils.MakeTranslateMatrix(-0.02, 0, 0));
+				}
+			}
+			if (e.keyCode == 38) {	// Up arrow
+				if (objectWorldMatrix[0][7] < 0.4){
+				objectWorldMatrix[0] = utils.multiplyMatrices(
+					objectWorldMatrix[0],
+					utils.MakeTranslateMatrix(0, 0, 0.02));
+				}
+			}
+			if (e.keyCode == 40) {	// Down arrow
+	
+				if (objectWorldMatrix[0][7] > -0.33){
+					objectWorldMatrix[0] = utils.multiplyMatrices(
+					objectWorldMatrix[0],
+					utils.MakeTranslateMatrix(0, 0, -0.02));
+				}
+			}
 			
-			if (objectWorldMatrix[0][3]> -0.63){
-				objectWorldMatrix[0] = utils.multiplyMatrices(
-				objectWorldMatrix[0],
-				utils.MakeTranslateMatrix(0.02, 0, 0));
+			//LEFT PLAYER 
+			if (e.keyCode == 72) {	// h
+				if (objectWorldMatrix[1][3] > -0.04){
+				objectWorldMatrix[1] = utils.multiplyMatrices(
+					objectWorldMatrix[1],
+					utils.MakeTranslateMatrix(0.02, 0, 0));
+				}
 			}
-		}
-		if (e.keyCode == 39) {	// Right arrow
-			if (objectWorldMatrix[0][3]< 0.07){
-				objectWorldMatrix[0] = utils.multiplyMatrices(
-				objectWorldMatrix[0],
-				utils.MakeTranslateMatrix(-0.02, 0, 0));
+			if (e.keyCode == 75) {	// k
+				console.log(objectWorldMatrix[1]);
+	
+	
+				if (objectWorldMatrix[1][3] < 0.67){
+				objectWorldMatrix[1] = utils.multiplyMatrices(
+					objectWorldMatrix[1],
+					utils.MakeTranslateMatrix(-0.02, 0, 0));
+				}
 			}
-		}
-		if (e.keyCode == 38) {	// Up arrow
-			if (objectWorldMatrix[0][7] < 0.4){
-			objectWorldMatrix[0] = utils.multiplyMatrices(
-				objectWorldMatrix[0],
-				utils.MakeTranslateMatrix(0, 0, 0.02));
+			if (e.keyCode == 85) {	// u
+				if (objectWorldMatrix[1][7] < 0.4){
+	
+				objectWorldMatrix[1] = utils.multiplyMatrices(
+					objectWorldMatrix[1],
+					utils.MakeTranslateMatrix(0, 0, 0.02));
+				}
 			}
-		}
-		if (e.keyCode == 40) {	// Down arrow
-
-			if (objectWorldMatrix[0][7] > -0.33){
-				objectWorldMatrix[0] = utils.multiplyMatrices(
-				objectWorldMatrix[0],
-				utils.MakeTranslateMatrix(0, 0, -0.02));
+			if (e.keyCode == 74) {	// j
+				if (objectWorldMatrix[1][7] > -0.33){
+				objectWorldMatrix[1] = utils.multiplyMatrices(
+					objectWorldMatrix[1],
+					utils.MakeTranslateMatrix(0, 0, -0.02));
+				}
 			}
-		}
+	
+			}
+			if (commands==1){
+				//RIGHT PLAYER
+				if (e.keyCode == 37) {	// Left arrow
+					
+					if (objectWorldMatrix[0][3]> -0.63){
+						objectWorldMatrix[0] = utils.multiplyMatrices(
+						objectWorldMatrix[0],
+						utils.MakeTranslateMatrix(0, 0, -0.02));
+					}
+				}
+				if (e.keyCode == 39) {	// Right arrow
+					if (objectWorldMatrix[0][3]< 0.07){
+						objectWorldMatrix[0] = utils.multiplyMatrices(
+						objectWorldMatrix[0],
+						utils.MakeTranslateMatrix(0, 0, 0.02));
+					}
+				}
+				if (e.keyCode == 38) {	// Up arrow
+					if (objectWorldMatrix[0][7] < 0.4){
+					objectWorldMatrix[0] = utils.multiplyMatrices(
+						objectWorldMatrix[0],
+						utils.MakeTranslateMatrix(0.02, 0, 0));
+					}
+				}
+				if (e.keyCode == 40) {	// Down arrow
 		
-		//LEFT PLAYER 
-		if (e.keyCode == 72) {	// h
-			if (objectWorldMatrix[1][3] > -0.04){
-			objectWorldMatrix[1] = utils.multiplyMatrices(
-				objectWorldMatrix[1],
-				utils.MakeTranslateMatrix(0.02, 0, 0));
-			}
-		}
-		if (e.keyCode == 75) {	// k
-			console.log(objectWorldMatrix[1]);
-
-
-			if (objectWorldMatrix[1][3] < 0.67){
-			objectWorldMatrix[1] = utils.multiplyMatrices(
-				objectWorldMatrix[1],
-				utils.MakeTranslateMatrix(-0.02, 0, 0));
-			}
-		}
-		if (e.keyCode == 85) {	// u
-			if (objectWorldMatrix[1][7] < 0.4){
-
-			objectWorldMatrix[1] = utils.multiplyMatrices(
-				objectWorldMatrix[1],
-				utils.MakeTranslateMatrix(0, 0, 0.02));
-			}
-		}
-		if (e.keyCode == 74) {	// j
-			if (objectWorldMatrix[1][7] > -0.33){
-			objectWorldMatrix[1] = utils.multiplyMatrices(
-				objectWorldMatrix[1],
-				utils.MakeTranslateMatrix(0, 0, -0.02));
-			}
-		}
-
-
+					if (objectWorldMatrix[0][7] > -0.33){
+						objectWorldMatrix[0] = utils.multiplyMatrices(
+						objectWorldMatrix[0],
+						utils.MakeTranslateMatrix(-0.02, 0, 0));
+					}
+				}
+				
+				//LEFT PLAYER 
+				if (e.keyCode == 72) {	// h
+					if (objectWorldMatrix[1][3] > -0.04){
+					objectWorldMatrix[1] = utils.multiplyMatrices(
+						objectWorldMatrix[1],
+						utils.MakeTranslateMatrix(0, 0, -0.02));
+					}
+				}
+				if (e.keyCode == 75) {	// k
+					console.log(objectWorldMatrix[1]);
+		
+		
+					if (objectWorldMatrix[1][3] < 0.67){
+					objectWorldMatrix[1] = utils.multiplyMatrices(
+						objectWorldMatrix[1],
+						utils.MakeTranslateMatrix(0, 0, 0.02));
+					}
+				}
+				if (e.keyCode == 85) {	// u
+					if (objectWorldMatrix[1][7] < 0.4){
+		
+					objectWorldMatrix[1] = utils.multiplyMatrices(
+						objectWorldMatrix[1],
+						utils.MakeTranslateMatrix(0.02, 0, 0));
+					}
+				}
+				if (e.keyCode == 74) {	// j
+					if (objectWorldMatrix[1][7] > -0.33){
+					objectWorldMatrix[1] = utils.multiplyMatrices(
+						objectWorldMatrix[1],
+						utils.MakeTranslateMatrix(-0.02, 0, 0));
+					}
+				}
+		
+				}
+				if (commands==-1){
+					//RIGHT PLAYER
+					if (e.keyCode == 37) {	// Left arrow
+						
+						if (objectWorldMatrix[0][3]> -0.63){
+							objectWorldMatrix[0] = utils.multiplyMatrices(
+							objectWorldMatrix[0],
+							utils.MakeTranslateMatrix(0, 0, 0.02));
+						}
+					}
+					if (e.keyCode == 39) {	// Right arrow
+						if (objectWorldMatrix[0][3]< 0.07){
+							objectWorldMatrix[0] = utils.multiplyMatrices(
+							objectWorldMatrix[0],
+							utils.MakeTranslateMatrix(0, 0, -0.02));
+						}
+					}
+					if (e.keyCode == 38) {	// Up arrow
+						if (objectWorldMatrix[0][7] < 0.4){
+						objectWorldMatrix[0] = utils.multiplyMatrices(
+							objectWorldMatrix[0],
+							utils.MakeTranslateMatrix(-0.02, 0, 0));
+						}
+					}
+					if (e.keyCode == 40) {	// Down arrow
+			
+						if (objectWorldMatrix[0][7] > -0.33){
+							objectWorldMatrix[0] = utils.multiplyMatrices(
+							objectWorldMatrix[0],
+							utils.MakeTranslateMatrix(0.02, 0, 0));
+						}
+					}
+					
+					//LEFT PLAYER 
+					if (e.keyCode == 72) {	// h
+						if (objectWorldMatrix[1][3] > -0.04){
+						objectWorldMatrix[1] = utils.multiplyMatrices(
+							objectWorldMatrix[1],
+							utils.MakeTranslateMatrix(0, 0, 0.02));
+						}
+					}
+					if (e.keyCode == 75) {	// k
+						console.log(objectWorldMatrix[1]);
+			
+			
+						if (objectWorldMatrix[1][3] < 0.67){
+						objectWorldMatrix[1] = utils.multiplyMatrices(
+							objectWorldMatrix[1],
+							utils.MakeTranslateMatrix(0, 0, -0.02));
+						}
+					}
+					if (e.keyCode == 85) {	// u
+						if (objectWorldMatrix[1][7] < 0.4){
+			
+						objectWorldMatrix[1] = utils.multiplyMatrices(
+							objectWorldMatrix[1],
+							utils.MakeTranslateMatrix(-0.02, 0, 0));
+						}
+					}
+					if (e.keyCode == 74) {	// j
+						if (objectWorldMatrix[1][7] > -0.33){
+						objectWorldMatrix[1] = utils.multiplyMatrices(
+							objectWorldMatrix[1],
+							utils.MakeTranslateMatrix(0.02, 0, 0));
+						}
+					}
+			
+					}
 
 
 		if (e.keyCode == 107) {	// Add
@@ -800,4 +961,20 @@ function requestCORSIfNotSameOrigin(img, url) {
 	if ((new URL(url)).origin !== window.location.origin) {
 		img.crossOrigin = "";
 	}
+}
+
+function loadSounds(target, sounds){
+            var prefix = "Audio/";
+            var format = ".ogg";
+			var audio = new Audio();
+			audio.src = prefix + sounds + format;
+			audio.load();
+			target.push(audio);
+            
+}
+        
+    
+function playSound(audio) {
+	audio.volume = 0.5;
+	audio.play();
 }
