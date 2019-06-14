@@ -75,11 +75,13 @@ var ambientLightInfluence = 0.0;
 var ambientLightColor = [1.0, 1.0, 1.0, 1.0];
 var cameraVal = 0;
 
+
+//
 var increments = []
 var pointsP1 = 0;
 var pointsP2 = 0;
 
-// 0 when central camera, 1 when player1 camera view, -1 when player2 camera view
+// 0 for central camera, 1 for player1 camera view, -1 for player2 camera view
 var commands = 0;
 
 var audio = [];
@@ -91,7 +93,7 @@ function main() {
 	checkbox = document.getElementById("chbx");
 
 	try {
-		//get Canvas without aplpha channel
+		//get Canvas without alpha channel
 		gl = canvas.getContext("webgl2", { alpha: false });
 	} catch (e) {
 		console.log(e);
@@ -127,15 +129,12 @@ function main() {
 		initInteraction();
 		
 		//Start the game
-		
 		increments[0] = -Math.cos(Math.PI/12); //dx
 		increments[1] = -Math.sin(Math.PI/12); //dy
 		moveBall();
 
 		//Rendering cycle
-		drawScene();
-
-	
+		drawScene();	
 
 
 	} else {
@@ -149,19 +148,19 @@ function updateCamera(val){
 
 
 	if (val == 1) {  
-		cx = 1.1;
+		cx = 1.5;
 		cy = 0;
-		cz = 1.6;
-		angle = -30;
+		cz = 1;
+		angle = -50;
 		elevation = -90;
 
 		commands = 1;
 		}
 	else if (val == -1) {  
-		cx = -1.1;
+		cx = -1.5;
 		cy = 0;
-		cz = 1.6;
-		angle = 30;
+		cz = 1;
+		angle = 50;
 		elevation = 90;
 		commands = -1;
 	}
@@ -466,58 +465,42 @@ function moveBall() {
 	var angle = Math.abs(Math.atan(dy/dx));
 	var bounce_angle =  angle;
 	
-	if(distanceFromP1 < 0.1){
+	if(distanceFromP1 < 0.1 || distanceFromP2 <0.1){
 		playSound(audio[0]);
 		if(dx<0){
-			dx = 0.01*Math.cos(bounce_angle);
+			dx = 0.1*Math.cos(bounce_angle);
 		}else{ 
-			dx = -0.01*Math.cos(bounce_angle);
+			dx = -0.1*Math.cos(bounce_angle);
 		}
 		
 		if(dy<0){
-			dy = 0.01*Math.sin(bounce_angle);
+			dy = 0.1*Math.sin(bounce_angle);
 		}
 		else{
-			dy = -0.01*Math.sin(bounce_angle);
+			dy = -0.1*Math.sin(bounce_angle);
 		}
 	
-	}
-	if(distanceFromP2 < 0.1){
-		playSound(audio[0]);
-		if(dx<0){
-			dx = 0.01*Math.cos(angle);
-		}else{
-			dx = -0.01*Math.cos(angle);
-
-		}
-		if(dy<0){
-			dy = 0.01*Math.sin(angle);
-		}
-		else{
-			dy = -0.01*Math.sin(angle);
-		
-			}
 	}
 
 	else if(y < -0.4){
 		playSound(audio[1]);
-		dy = 0.01*Math.sin(bounce_angle)
+		dy = 0.02*Math.sin(bounce_angle)
 		if(dx<0){
-			dx = -0.01*Math.cos(bounce_angle);
+			dx = -0.02*Math.cos(bounce_angle);
 		}
 		else{
-			dx = 0.01*Math.cos(bounce_angle);
+			dx = 0.02*Math.cos(bounce_angle);
 		}
 	} 
 
 	else if(y>0.4){
 		playSound(audio[1]);
-		dy = -0.01*Math.sin(bounce_angle);
+		dy = -0.02*Math.sin(bounce_angle);
 		if(dx<0){
-			dx = -0.01*Math.cos(bounce_angle);
+			dx = -0.02*Math.cos(bounce_angle);
 		}
 		else{
-			dx = 0.01*Math.cos(bounce_angle);
+			dx = 0.02*Math.cos(bounce_angle);
 		}
 	}
 
@@ -536,12 +519,12 @@ function moveBall() {
 		}
 		else{
 			playSound(audio[1]);
-			dx = -0.01*Math.sin(bounce_angle)
+			dx = -0.02*Math.sin(bounce_angle)
 			if(dy<0){
-				dy = -0.01*Math.cos(bounce_angle);
+				dy = -0.02*Math.cos(bounce_angle);
 			}
 			else{
-				dy = 0.01*Math.cos(bounce_angle);
+				dy = 0.02*Math.cos(bounce_angle);
 			}
 		}
 	}
@@ -558,12 +541,12 @@ function moveBall() {
 		}
 		else{
 			playSound(audio[1]);
-			dx = 0.01*Math.sin(bounce_angle)
+			dx = 0.02*Math.sin(bounce_angle)
 			if(dy<0){
-				dy = -0.01*Math.cos(bounce_angle);
+				dy = -0.02*Math.cos(bounce_angle);
 			}
 			else{
-				dy = 0.01*Math.cos(bounce_angle);
+				dy = 0.02*Math.cos(bounce_angle);
 			}
 
 		}
@@ -571,16 +554,16 @@ function moveBall() {
 	
 	else {
 		if(dx>0){
-			dx = 0.01*Math.cos(angle);
+			dx = 0.02*Math.cos(angle);
 		}
 		else{
-			dx = -0.01*Math.cos(angle);
+			dx = -0.02*Math.cos(angle);
 		}
 		if(dy > 0){
-			dy = 0.01*Math.sin(angle);
+			dy = 0.02*Math.sin(angle);
 		}
 		else{
-			dy = -0.01*Math.sin(angle);
+			dy = -0.02*Math.sin(angle);
 		}
 	}
  
@@ -593,7 +576,7 @@ function moveBall() {
 	increments[1] = dy;
 	
 
-	window.setTimeout(moveBall, 10);
+	window.requestAnimationFrame(moveBall);
 } 
 
 function initInteraction() {
@@ -971,8 +954,7 @@ function loadSounds(target, sounds){
 			audio.load();
 			target.push(audio);
             
-}
-        
+}     
     
 function playSound(audio) {
 	audio.volume = 0.5;
