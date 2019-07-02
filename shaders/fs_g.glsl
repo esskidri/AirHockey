@@ -14,5 +14,6 @@ varying vec4 goureaudDiffuseAndAmbient;
 void main() { 
 	//Computing the color contribution from the texture
 	vec4 diffuseTextureColorMixture = mDiffColor * (1.0 - textureInfluence) + texture2D(textureFile, fsUVs) * textureInfluence ;
-	gl_FragColor = min(diffuseTextureColorMixture * (goureaudSpecular + goureaudDiffuseAndAmbient), vec4(1.0, 1.0, 1.0, 1.0)); 
+	gl_FragColor = min(diffuseTextureColorMixture * (goureaudSpecular + goureaudDiffuseAndAmbient), 
+	vec4(1.0, 1.0, 1.0, 1.0)); 
 }

@@ -1,31 +1,33 @@
 var canvas, checkbox;
 var gl = null;
 
-var shaderProgram; 
+var shaderProgram = new Array(2);
+var program_floor;
 
 var shaderDir = "http://127.0.0.1:8887/shaders/";
 var modelsDir = "http://127.0.0.1:8887/models/";
+var baseDir = "http://127.0.0.1:8887/" 
 
-var perspectiveMatrix,
-	viewMatrix;
 
-var vertexNormalHandle;
-var vertexPositionHandle;
-var vertexUVHandle;
-var textureFileHandle;
-var textureInfluenceHandle;
-var ambientLightInfluenceHandle;
-var ambientLightColorHandle;
+var perspectiveMatrix, viewMatrix;
 
-var matrixPositionHandle;
-var materialDiffColorHandle;
-var lightDirectionHandle;
-var lightPositionHandle;
-var lightColorHandle;
-var lightTypeHandle;
-var eyePositionHandle;
-var materialSpecColorHandle;
-var materialSpecPowerHandle;
+var vertexNormalHandle = new Array(2);
+var vertexPositionHandle = new Array(2);
+var vertexUVHandle = new Array(2);
+var textureFileHandle = new Array(2);
+var textureInfluenceHandle = new Array(2);
+var ambientLightInfluenceHandle = new Array(2);
+var ambientLightColorHandle = new Array(2);
+
+var matrixPositionHandle = new Array(2);
+var materialDiffColorHandle = new Array(2);
+var lightDirectionHandle = new Array(2);
+var lightPositionHandle = new Array(2);
+var lightColorHandle = new Array(2);
+var lightTypeHandle = new Array(2);
+var eyePositionHandle = new Array(2);
+var materialSpecColorHandle = new Array(2);
+var materialSpecPowerHandle = new Array(2);
 
 
 var objectSpecularPower = 20.0;
@@ -69,7 +71,7 @@ var delta = 2.0;
 var observerPositionObj = new Array();
 var lightDirectionObj = new Array();
 var lightPositionObj = new Array();
-
+var currentShader = 0; //Defines the current shader in use.
 var currentLightType = 1;         
 var textureInfluence = 1.0;
 var ambientLightInfluence = 0.0;
@@ -110,23 +112,16 @@ function main() {
 		gl.enable(gl.DEPTH_TEST);
 		perspectiveMatrix = utils.MakePerspective(45, w / h, 0.1, 100.0);
 
-		//Open the json file containing the 3D model to load,
-		//parse it to retreive objects' data
-		//and creates the VBO and IBO from them
-		//The vertex format is (x,y,z,nx,ny,nz,u,v)
 		loadModel("AirHockeyTable.json");
-
+		//loadFloor();
+		//loadTriangle();
 		
         loadSounds(audio, ["collision"]);
         loadSounds(audio, ["edge"]);
         loadSounds(audio, ["goal"]);     
     
-		//Load shaders' code
-		//compile them
-		//retrieve the handles
 		loadShaders();
 
-		//Setting up the interaction using keys
 		initInteraction();
 		
 		//Start the game
@@ -210,57 +205,93 @@ function updateAmbientLightColor(val) {
 
 }
 
+function createShader(gl, type, source) {
+	var shader = gl.createShader(type);
+	gl.shaderSource(shader, source);
+	gl.compileShader(shader);
+	var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+	if (success) {    
+	  return shader;
+	}else{
+	  console.log(gl.getShaderInfoLog(shader));  // eslint-disable-line
+	  gl.deleteShader(shader);
+	  throw "could not compile shader:" + gl.getShaderInfoLog(shader);
+	}
+  
+}
+
+function createProgram(gl, vertexShader, fragmentShader) {
+	var program = gl.createProgram();
+	gl.attachShader(program, vertexShader);
+	gl.attachShader(program, fragmentShader);
+	gl.linkProgram(program);
+	var success = gl.getProgramParameter(program, gl.LINK_STATUS);
+	if (success) {
+	  return program;
+	}else{
+	   throw ("program filed to link:" + gl.getProgramInfoLog (program));
+	  console.log(gl.getProgramInfoLog(program));  // eslint-disable-line
+	  gl.deleteProgram(program);
+	  return undefined;
+	}
+}
+
 function loadShaders() {
 
-	utils.loadFiles([shaderDir + 'vs_g.glsl',
+	utils.loadFiles([shaderDir + 'vs_p.glsl',
+	shaderDir + 'fs_p.glsl',
+	shaderDir + 'vs_g.glsl',
 	shaderDir + 'fs_g.glsl'],
 		function (shaderText) {
-			var vertexShader = gl.createShader(gl.VERTEX_SHADER);
-			gl.shaderSource(vertexShader, shaderText[0]);
-			gl.compileShader(vertexShader);
-			if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-				alert("ERROR IN VS SHADER : " + gl.getShaderInfoLog(vertexShader));
+			var numShader = 0;
+			for (i = 0; i < shaderText.length; i += 2) {
+				var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+				gl.shaderSource(vertexShader, shaderText[i]);
+				gl.compileShader(vertexShader);
+				if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+					alert("ERROR IN VS SHADER : " + gl.getShaderInfoLog(vertexShader));
+				}
+				var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+				gl.shaderSource(fragmentShader, shaderText[i+1]);
+				gl.compileShader(fragmentShader);
+				if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+					alert("ERROR IN FS SHADER : " + gl.getShaderInfoLog(fragmentShader));
+				}
+				shaderProgram[numShader] = gl.createProgram();
+				gl.attachShader(shaderProgram[numShader], vertexShader);
+				gl.attachShader(shaderProgram[numShader], fragmentShader);
+				gl.linkProgram(shaderProgram[numShader]);
+				if (!gl.getProgramParameter(shaderProgram[numShader], gl.LINK_STATUS)) {
+					alert("Unable to initialize the shader program...");
+				}
+				numShader++;
 			}
-			var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-			gl.shaderSource(fragmentShader, shaderText[1]);
-			gl.compileShader(fragmentShader);
-			if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-				alert("ERROR IN FS SHADER : " + gl.getShaderInfoLog(fragmentShader));
-			}
-			shaderProgram = gl.createProgram();
-			gl.attachShader(shaderProgram, vertexShader);
-			gl.attachShader(shaderProgram, fragmentShader);
-			gl.linkProgram(shaderProgram);
-			if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-				alert("Unable to initialize the shader program...");
-			}
-		}
 
-		);
+		});
 
-		
-		vertexPositionHandle = gl.getAttribLocation(shaderProgram, 'inPosition');
-		vertexNormalHandle = gl.getAttribLocation(shaderProgram, 'inNormal');
-		vertexUVHandle = gl.getAttribLocation(shaderProgram, 'inUVs');
+	for (i = 0; i < 2; i++) {
+		vertexPositionHandle[i] = gl.getAttribLocation(shaderProgram[i], 'inPosition');
+		vertexNormalHandle[i] = gl.getAttribLocation(shaderProgram[i], 'inNormal');
+		vertexUVHandle[i] = gl.getAttribLocation(shaderProgram[i], 'inUVs');
 
-		matrixPositionHandle = gl.getUniformLocation(shaderProgram, 'wvpMatrix');
+		matrixPositionHandle[i] = gl.getUniformLocation(shaderProgram[i], 'wvpMatrix');
 
-		materialDiffColorHandle = gl.getUniformLocation(shaderProgram, 'mDiffColor');
-		materialSpecColorHandle = gl.getUniformLocation(shaderProgram, 'mSpecColor');
-		materialSpecPowerHandle = gl.getUniformLocation(shaderProgram, 'mSpecPower');
-		textureFileHandle = gl.getUniformLocation(shaderProgram, 'textureFile');
+		materialDiffColorHandle[i] = gl.getUniformLocation(shaderProgram[i], 'mDiffColor');
+		materialSpecColorHandle[i] = gl.getUniformLocation(shaderProgram[i], 'mSpecColor');
+		materialSpecPowerHandle[i] = gl.getUniformLocation(shaderProgram[i], 'mSpecPower');
+		textureFileHandle[i] = gl.getUniformLocation(shaderProgram[i], 'textureFile');
 
-		textureInfluenceHandle = gl.getUniformLocation(shaderProgram, 'textureInfluence');
-		ambientLightInfluenceHandle = gl.getUniformLocation(shaderProgram, 'ambientLightInfluence');
-		ambientLightColorHandle = gl.getUniformLocation(shaderProgram, 'ambientLightColor');
+		textureInfluenceHandle[i] = gl.getUniformLocation(shaderProgram[i], 'textureInfluence');
+		ambientLightInfluenceHandle[i] = gl.getUniformLocation(shaderProgram[i], 'ambientLightInfluence');
+		ambientLightColorHandle[i] = gl.getUniformLocation(shaderProgram[i], 'ambientLightColor');
 
-		eyePositionHandle = gl.getUniformLocation(shaderProgram, 'eyePosition');
+		eyePositionHandle[i] = gl.getUniformLocation(shaderProgram[i], 'eyePosition');
 
-		lightDirectionHandle = gl.getUniformLocation(shaderProgram, 'lightDirection');
-		lightPositionHandle = gl.getUniformLocation(shaderProgram, 'lightPosition');
-		lightColorHandle = gl.getUniformLocation(shaderProgram, 'lightColor');
-		lightTypeHandle = gl.getUniformLocation(shaderProgram, 'lightType');
-	
+		lightDirectionHandle[i] = gl.getUniformLocation(shaderProgram[i], 'lightDirection');
+		lightPositionHandle[i] = gl.getUniformLocation(shaderProgram[i], 'lightPosition');
+		lightColorHandle[i] = gl.getUniformLocation(shaderProgram[i], 'lightColor');
+		lightTypeHandle[i] = gl.getUniformLocation(shaderProgram[i], 'lightType');
+	}
 		
 	
 }
@@ -391,6 +422,7 @@ function loadModel(modelName) {
 			//vertices, normals and UV set 1
 			vertexBufferObjectId[i] = gl.createBuffer();
 			gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferObjectId[i]);
+
 			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(objVertex), gl.STATIC_DRAW);
 
 
@@ -403,9 +435,7 @@ function loadModel(modelName) {
 					loadedModel.meshes[i].faces[n][2]
 				);
 			}
-
-
-
+			
 			indexBufferObjectId[i] = gl.createBuffer();
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBufferObjectId[i]);
 			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(facesData), gl.STATIC_DRAW);
@@ -431,6 +461,135 @@ function loadModel(modelName) {
 
 }
 
+var matrixLocation;
+var textLocation;
+var texture;
+
+function loadTriangle(){
+
+	var vertexShaderSourceTri = `#version 300 es
+	
+	// an attribute is an input (in) to a vertex shader.
+	// It will receive data from a buffer
+	in vec4 a_position;
+	
+	// all shaders have a main function
+	void main() {
+	
+	  // gl_Position is a special variable a vertex shader
+	  // is responsible for setting
+	  gl_Position = a_position;
+	}
+	`;
+	
+	var fragmentShaderSourceTri = `#version 300 es
+	
+	// fragment shaders don't have a default precision so we need
+	// to pick one. mediump is a good default. It means "medium precision"
+	precision mediump float;
+	
+	// we need to declare an output for the fragment shader
+	out vec4 outColor;
+	
+	void main() {
+	  // Just set the output to a constant 
+	  outColor = vec4(1.0,0.0,1.0, 1);
+	}
+	`;	
+	 
+	var aspect_ratio = 1.0;
+	
+	// create GLSL shaders, upload the GLSL source, compile the shaders
+	var vertexShaderT = createShader(gl, gl.VERTEX_SHADER, vertexShaderSourceTri);
+	var fragmentShaderT = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSourceTri);
+	
+	// Link the two shaders into a program
+	programTri = createProgram(gl, vertexShaderT, fragmentShaderT);
+	
+	// look up where the vertex data needs to go.
+	var positionAttributeLocationT = gl.getAttribLocation(programTri, "a_position");
+	
+	// Create a buffer and put three 2d clip space points in it
+	var positionBufferT = gl.createBuffer();
+	
+	// Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
+	gl.bindBuffer(gl.ARRAY_BUFFER, positionBufferT);
+	
+	var positions = [
+		-1 , -1.0 * aspect_ratio,
+		-1 , 1 * aspect_ratio,
+		1  , -1.0 * aspect_ratio,
+		];
+		
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+	
+	// Turn on the attribute
+	gl.enableVertexAttribArray(positionAttributeLocationT);
+	
+	// Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+	var size = 2;          // 2 components per iteration
+	var normalize = false; // don't normalize the data
+	var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+	var offset = 0;        // start at the beginning of the buffer
+	gl.vertexAttribPointer(positionAttributeLocationT, size, gl.FLOAT, normalize, stride, offset);
+
+	
+}
+
+function loadFloor(){
+
+	
+	utils.loadFiles([shaderDir + 'vs_floor.glsl', shaderDir + 'fs_floor.glsl'],
+	 function (shaderText) {
+		var vertexShaderFloor = utils.createShader(gl, gl.VERTEX_SHADER, shaderText[0]);
+		var fragmentShaderFloor = utils.createShader(gl, gl.FRAGMENT_SHADER, shaderText[1]);
+		program_floor = utils.createProgram(gl, vertexShaderFloor, fragmentShaderFloor);
+  
+	  });
+		
+	gl.useProgram(program_floor);
+		 
+	var positionAttributeLocation = gl.getAttribLocation(program_floor, "a_position");  
+	var uvAttributeLocation = gl.getAttribLocation(program_floor, "a_uv");  
+	matrixLocation = gl.getUniformLocation(program_floor, "matrix");  
+	textLocation = gl.getUniformLocation(program_floor, "u_texture");
+	vao = gl.createVertexArray();
+	gl.bindVertexArray(vao);
+  
+	var positionBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	gl.enableVertexAttribArray(positionAttributeLocation);
+	gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+  
+	var uvBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv), gl.STATIC_DRAW);
+	gl.enableVertexAttribArray(uvAttributeLocation);
+	gl.vertexAttribPointer(uvAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+  
+	var indexBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW); 
+  
+
+	// Create a texture.
+	texture = gl.createTexture();
+	// use texture unit 0
+	gl.activeTexture(gl.TEXTURE0);
+	// bind to the TEXTURE_2D bind point of texture unit 0
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+  
+	// Asynchronously load an image
+	var image = new Image();
+	requestCORSIfNotSameOrigin(image, baseDir + "floor.jpg")
+	image.src = baseDir + "floor.jpg";
+	image.onload = function() {
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+		gl.generateMipmap(gl.TEXTURE_2D);
+	  };
+}
 
 function moveBall() {
 
@@ -836,17 +995,20 @@ function computeMatrices() {
 		projectionMatrix[i] = utils.multiplyMatrices(perspectiveMatrix, projectionMatrix[i]);
 
 		//lightDirectionObj[i] = utils.multiplyMatrix3Vector3(utils.transposeMatrix3(utils.sub3x3from4x4(objectWorldMatrix[i])), lightDirection);
+		
+		//OBJECT SPACE
 		lightDirectionObj[i] = utils.multiplyMatrix3Vector3(utils.invertMatrix3(utils.sub3x3from4x4(objectWorldMatrix[i])), lightDirection);
 
 		lightPositionObj[i] = utils.multiplyMatrix3Vector3(utils.invertMatrix3(utils.sub3x3from4x4(objectWorldMatrix[i])), lightPosition);
 
-		//observerPositionObj[i] = utils.multiplyMatrix3Vector3(utils.invertMatrix3(utils.sub3x3from4x4(objectWorldMatrix[i])), eyeTemp);
-		observerPositionObj[i] = utils.multiplyMatrices( 
-			utils.invertMatrix3(utils.multiplyMatrices(viewMatrix,objectWorldMatrix[i])), eyeTemp);
+		observerPositionObj[i] = utils.multiplyMatrix3Vector3(utils.invertMatrix3(utils.sub3x3from4x4(objectWorldMatrix[i])), eyeTemp);
+		//observerPositionObj[i] = utils.multiplyMatrices( 
+		//utils.invertMatrix3(utils.multiplyMatrices(viewMatrix,objectWorldMatrix[i])), eyeTemp);
 
 	}
 
 }
+
 
 
 function drawScene() {
@@ -854,74 +1016,107 @@ function drawScene() {
 
 	computeMatrices();
 
+
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-	gl.useProgram(shaderProgram);
+	// Tell it to use our program (pair of shaders)
+	/* gl.useProgram(programTri);
+
+	// draw
+	var primitiveType = gl.TRIANGLES;
+	var offset = 0;
+	var count = 3;
+	gl.drawArrays(primitiveType, offset, count);
+
+	 */
+
+	gl.useProgram(shaderProgram[currentShader]);
 
 	for (i = 0; i < sceneObjects; i++) {
-		gl.uniformMatrix4fv(matrixPositionHandle, gl.FALSE, utils.transposeMatrix(projectionMatrix[i]));
+		gl.uniformMatrix4fv(matrixPositionHandle[currentShader], gl.FALSE, utils.transposeMatrix(projectionMatrix[i]));
 
-		gl.uniform1f(textureInfluenceHandle, textureInfluence);
-		gl.uniform1f(ambientLightInfluenceHandle, ambientLightInfluence);
+		gl.uniform1f(textureInfluenceHandle[currentShader], textureInfluence);
+		gl.uniform1f(ambientLightInfluenceHandle[currentShader], ambientLightInfluence);
 
-		gl.uniform1i(textureFileHandle, 0);		//Texture channel 0 used for diff txt
+		gl.uniform1i(textureFileHandle[currentShader], 0);		//Texture channel 0 used for diff txt
 		if (nTexture[i] == true && diffuseTextureObj[i].webglTexture) {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, diffuseTextureObj[i].webglTexture);
 		}
 
-		gl.uniform4f(lightColorHandle, lightColor[0],
+		gl.uniform4f(lightColorHandle[currentShader], lightColor[0],
 			lightColor[1],
 			lightColor[2],
 			lightColor[3]);
-		gl.uniform4f(materialDiffColorHandle, diffuseColor[i][0],
+		gl.uniform4f(materialDiffColorHandle[currentShader], diffuseColor[i][0],
 			diffuseColor[i][1],
 			diffuseColor[i][2],
 			diffuseColor[i][3]);
 
-		gl.uniform4f(materialSpecColorHandle, specularColor[i][0],
+		gl.uniform4f(materialSpecColorHandle[currentShader], specularColor[i][0],
 			specularColor[i][1],
 			specularColor[i][2],
 			specularColor[i][3]);
-		gl.uniform4f(ambientLightColorHandle, ambientLightColor[0],
+		gl.uniform4f(ambientLightColorHandle[currentShader], ambientLightColor[0],
 			ambientLightColor[1],
 			ambientLightColor[2],
 			ambientLightColor[3]);
 
-		gl.uniform1f(materialSpecPowerHandle, objectSpecularPower);
+		gl.uniform1f(materialSpecPowerHandle[currentShader], objectSpecularPower);
 
 
-		gl.uniform3f(lightDirectionHandle, lightDirectionObj[i][0],
+		gl.uniform3f(lightDirectionHandle[currentShader], lightDirectionObj[i][0],
 			lightDirectionObj[i][1],
 			lightDirectionObj[i][2]);
-		gl.uniform3f(lightPositionHandle, lightPositionObj[i][0],
+		gl.uniform3f(lightPositionHandle[currentShader], lightPositionObj[i][0],
 			lightPositionObj[i][1],
 			lightPositionObj[i][2]);
 
-		gl.uniform1i(lightTypeHandle, currentLightType);
+		gl.uniform1i(lightTypeHandle[currentShader], currentLightType);
 
-		gl.uniform3f(eyePositionHandle, observerPositionObj[i][0],
+		gl.uniform3f(eyePositionHandle[currentShader], observerPositionObj[i][0],
 			observerPositionObj[i][1],
 			observerPositionObj[i][2]);
 
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferObjectId[i]);
 
-		gl.enableVertexAttribArray(vertexPositionHandle);
-		gl.vertexAttribPointer(vertexPositionHandle, 3, gl.FLOAT, gl.FALSE, 4 * 8, 0);
+		gl.enableVertexAttribArray(vertexPositionHandle[currentShader]);
+		gl.vertexAttribPointer(vertexPositionHandle[currentShader], 3, gl.FLOAT, gl.FALSE, 4 * 8, 0);
 
-		gl.enableVertexAttribArray(vertexNormalHandle);
-		gl.vertexAttribPointer(vertexNormalHandle, 3, gl.FLOAT, gl.FALSE, 4 * 8, 4 * 3);
+		gl.enableVertexAttribArray(vertexNormalHandle[currentShader]);
+		gl.vertexAttribPointer(vertexNormalHandle[currentShader], 3, gl.FLOAT, gl.FALSE, 4 * 8, 4 * 3);
 
-		gl.vertexAttribPointer(vertexUVHandle, 2, gl.FLOAT, gl.FALSE, 4 * 8, 4 * 6);
-		gl.enableVertexAttribArray(vertexUVHandle);
+		gl.vertexAttribPointer(vertexUVHandle[currentShader], 2, gl.FLOAT, gl.FALSE, 4 * 8, 4 * 6);
+		gl.enableVertexAttribArray(vertexUVHandle[currentShader]);
 
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBufferObjectId[i]);
 		gl.drawElements(gl.TRIANGLES, facesNumber[i] * 3, gl.UNSIGNED_SHORT, 0);
 
-		gl.disableVertexAttribArray(vertexPositionHandle);
-		gl.disableVertexAttribArray(vertexNormalHandle);
+
+
+		gl.disableVertexAttribArray(vertexPositionHandle[currentShader]);
+		gl.disableVertexAttribArray(vertexNormalHandle[currentShader]);
 	}
+  
+
+
+	/* 
+	//FLOOR
+	gl.useProgram(program_floor);
+
+	worldMatrixFloor = utils.MakeScaleMatrix(200);
+
+	var viewWorldMatrix = utils.multiplyMatrices(viewMatrix, worldMatrixFloor);
+	var projectionMatrixFloor = utils.multiplyMatrices(perspectiveMatrix, viewWorldMatrix);
+
+	gl.uniformMatrix4fv(matrixLocation, gl.FALSE, utils.transposeMatrix(projectionMatrixFloor));
+	gl.uniform1i(textLocation, texture);
+
+	gl.bindVertexArray(vao);
+	gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0 );
+ */
+
 
 	window.requestAnimationFrame(drawScene);
 	

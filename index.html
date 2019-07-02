@@ -4,6 +4,7 @@
 	<meta charset='utf-8'>
 	<title>AIR HOCKEY</title>
 	<script type="text/javascript" src="utils.js"></script>
+	<script type="text/javascript" src="floor.js"></script>
 	<script type="text/javascript" src="drawing.js"></script>
 	</head>
 
@@ -28,6 +29,11 @@
 				<input type="radio" name="light" onchange="updateLightType(this.value);" value="4" > Spot <br/>
 				<input type="radio" name="light" id="nol" onchange="updateLightType(this.value);" value="5" > [NO Light] <br/>
 			</form>
+<p><b> Light Computation </b></p>
+			<form>
+				<input type="radio" name="type" onchange="updateShader(this.value);" value="1" > Per Vertex <br/>
+				<input type="radio" name="type" onchange="updateShader(this.value);" value="0" checked> Per Fragment <br/>
+</form> 
 					
 			<p><b> Texture Influence </b></p>
 			<div id="slider1"> 0 
