@@ -113,8 +113,6 @@ function main() {
 		perspectiveMatrix = utils.MakePerspective(45, w / h, 0.1, 100.0);
 
 		loadModel("AirHockeyTable.json");
-		//loadFloor();
-		//loadTriangle();
 		
         loadSounds(audio, ["collision"]);
         loadSounds(audio, ["edge"]);
@@ -465,131 +463,6 @@ var matrixLocation;
 var textLocation;
 var texture;
 
-function loadTriangle(){
-
-	var vertexShaderSourceTri = `#version 300 es
-	
-	// an attribute is an input (in) to a vertex shader.
-	// It will receive data from a buffer
-	in vec4 a_position;
-	
-	// all shaders have a main function
-	void main() {
-	
-	  // gl_Position is a special variable a vertex shader
-	  // is responsible for setting
-	  gl_Position = a_position;
-	}
-	`;
-	
-	var fragmentShaderSourceTri = `#version 300 es
-	
-	// fragment shaders don't have a default precision so we need
-	// to pick one. mediump is a good default. It means "medium precision"
-	precision mediump float;
-	
-	// we need to declare an output for the fragment shader
-	out vec4 outColor;
-	
-	void main() {
-	  // Just set the output to a constant 
-	  outColor = vec4(1.0,0.0,1.0, 1);
-	}
-	`;	
-	 
-	var aspect_ratio = 1.0;
-	
-	// create GLSL shaders, upload the GLSL source, compile the shaders
-	var vertexShaderT = createShader(gl, gl.VERTEX_SHADER, vertexShaderSourceTri);
-	var fragmentShaderT = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSourceTri);
-	
-	// Link the two shaders into a program
-	programTri = createProgram(gl, vertexShaderT, fragmentShaderT);
-	
-	// look up where the vertex data needs to go.
-	var positionAttributeLocationT = gl.getAttribLocation(programTri, "a_position");
-	
-	// Create a buffer and put three 2d clip space points in it
-	var positionBufferT = gl.createBuffer();
-	
-	// Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
-	gl.bindBuffer(gl.ARRAY_BUFFER, positionBufferT);
-	
-	var positions = [
-		-1 , -1.0 * aspect_ratio,
-		-1 , 1 * aspect_ratio,
-		1  , -1.0 * aspect_ratio,
-		];
-		
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-	
-	// Turn on the attribute
-	gl.enableVertexAttribArray(positionAttributeLocationT);
-	
-	// Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-	var size = 2;          // 2 components per iteration
-	var normalize = false; // don't normalize the data
-	var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-	var offset = 0;        // start at the beginning of the buffer
-	gl.vertexAttribPointer(positionAttributeLocationT, size, gl.FLOAT, normalize, stride, offset);
-
-	
-}
-
-function loadFloor(){
-
-	
-	utils.loadFiles([shaderDir + 'vs_floor.glsl', shaderDir + 'fs_floor.glsl'],
-	 function (shaderText) {
-		var vertexShaderFloor = utils.createShader(gl, gl.VERTEX_SHADER, shaderText[0]);
-		var fragmentShaderFloor = utils.createShader(gl, gl.FRAGMENT_SHADER, shaderText[1]);
-		program_floor = utils.createProgram(gl, vertexShaderFloor, fragmentShaderFloor);
-  
-	  });
-		
-	gl.useProgram(program_floor);
-		 
-	var positionAttributeLocation = gl.getAttribLocation(program_floor, "a_position");  
-	var uvAttributeLocation = gl.getAttribLocation(program_floor, "a_uv");  
-	matrixLocation = gl.getUniformLocation(program_floor, "matrix");  
-	textLocation = gl.getUniformLocation(program_floor, "u_texture");
-	vao = gl.createVertexArray();
-	gl.bindVertexArray(vao);
-  
-	var positionBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-	gl.enableVertexAttribArray(positionAttributeLocation);
-	gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-  
-	var uvBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv), gl.STATIC_DRAW);
-	gl.enableVertexAttribArray(uvAttributeLocation);
-	gl.vertexAttribPointer(uvAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-  
-	var indexBuffer = gl.createBuffer();
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW); 
-  
-
-	// Create a texture.
-	texture = gl.createTexture();
-	// use texture unit 0
-	gl.activeTexture(gl.TEXTURE0);
-	// bind to the TEXTURE_2D bind point of texture unit 0
-	gl.bindTexture(gl.TEXTURE_2D, texture);
-  
-	// Asynchronously load an image
-	var image = new Image();
-	requestCORSIfNotSameOrigin(image, baseDir + "floor.jpg")
-	image.src = baseDir + "floor.jpg";
-	image.onload = function() {
-		gl.bindTexture(gl.TEXTURE_2D, texture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-		gl.generateMipmap(gl.TEXTURE_2D);
-	  };
-}
 
 function moveBall() {
 
@@ -1019,17 +892,6 @@ function drawScene() {
 
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-	// Tell it to use our program (pair of shaders)
-	/* gl.useProgram(programTri);
-
-	// draw
-	var primitiveType = gl.TRIANGLES;
-	var offset = 0;
-	var count = 3;
-	gl.drawArrays(primitiveType, offset, count);
-
-	 */
-
 	gl.useProgram(shaderProgram[currentShader]);
 
 	for (i = 0; i < sceneObjects; i++) {
@@ -1099,25 +961,6 @@ function drawScene() {
 		gl.disableVertexAttribArray(vertexNormalHandle[currentShader]);
 	}
   
-
-
-	/* 
-	//FLOOR
-	gl.useProgram(program_floor);
-
-	worldMatrixFloor = utils.MakeScaleMatrix(200);
-
-	var viewWorldMatrix = utils.multiplyMatrices(viewMatrix, worldMatrixFloor);
-	var projectionMatrixFloor = utils.multiplyMatrices(perspectiveMatrix, viewWorldMatrix);
-
-	gl.uniformMatrix4fv(matrixLocation, gl.FALSE, utils.transposeMatrix(projectionMatrixFloor));
-	gl.uniform1i(textLocation, texture);
-
-	gl.bindVertexArray(vao);
-	gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0 );
- */
-
-
 	window.requestAnimationFrame(drawScene);
 	
 	
